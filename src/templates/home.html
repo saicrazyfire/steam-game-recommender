@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Steam Game Recommender</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-800 text-gray-100 font-roboto">
+
+    <header class="bg-gray-900 shadow-lg">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl md:text-2xl font-bold text-white">Steam Game Recommender</h1>
+            {% if user %}
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-300">Welcome, <strong class="font-medium text-purple-300">{{ user.persona_name }}</strong>!</span>
+                <button id="refresh-button" title="Refresh game list from Steam" class="text-gray-400 hover:text-white transition-colors duration-200 p-2 rounded-full hover:bg-gray-700">
+                    <span class="material-symbols-outlined text-2xl">refresh</span>
+                </button>
+                <a href="/logout" class="text-sm text-gray-400 hover:text-red-400 hover:underline px-2 py-1 rounded">Logout</a>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        {% if user %}
+            <div id="refresh-status" class="mb-4 text-center"></div>
+            <div class="text-sm text-gray-400 text-center mb-6">
+                Last game data refresh: <span id="last-refreshed" class="font-semibold text-gray-300">{{ last_refreshed }}</span>
+            </div>
+            
+            <div class="max-w-4xl mx-auto bg-gray-900 p-6 rounded-lg shadow-xl border border-gray-700">
+                <h2 class="text-2xl font-bold mb-6 text-center text-purple-300">Get AI Recommendations</h2>
+                <form id="recommendations-form" method="post" class="space-y-6">
+                    
+                    <div>
+                        <label for="user_prompt" class="block mb-2 font-bold text-gray-300">Your Request:</label>
+                        <textarea name="user_prompt" id="user_prompt" rows="3" class="w-full bg-gray-800 border border-gray-700 text-white p-3 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="e.g., 'Find me a few games to play based on my library and playtime.'">{{ "I'm looking for a few games to play based on my existing game list and the time I spent on them." }}</textarea>
+                    </div>
+
+                    <div class="p-4 border border-gray-700 rounded-lg bg-gray-800">
+                        <h3 class="text-lg font-bold mb-3 text-gray-300">Filtering Options</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center mb-4">
+                            <div>
+                                <label for="playtime_threshold_hours" class="block mb-2 text-gray-300">Exclude games with more than (hours) played:</label>
+                                <input type="number" name="playtime_threshold_hours" id="playtime_threshold_hours" class="w-24 bg-gray-700 border border-gray-600 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" value="50" min="0">
+                            </div>
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="exclude_by_hltb" value="true" checked class="form-checkbox h-5 w-5 bg-gray-800 text-purple-600 border-gray-600 rounded focus:ring-purple-500">
+                                    <span class="ml-2 text-gray-300">Exclude if playtime > HLTB Main Story</span>
+                                </label>
+                            </div>
+                        </div>
+                         <details class="mt-4 text-gray-300">
+                            <summary class="cursor-pointer text-purple-400 hover:text-purple-300 font-medium">Manual Game Exclusions (for top 50 played games)</summary>
+                            <div id="manual-exclusion-list" class="mt-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto p-2 bg-gray-700 rounded-md border border-gray-600">
+                                <p>Loading your most played games...</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Changes are saved automatically when you check/uncheck a game.</p>
+                        </details>
+                    </div>
+                    
+                    <details class="p-4 border border-gray-700 rounded-lg bg-gray-800">
+                        <summary class="cursor-pointer text-purple-400 hover:text-purple-300 font-medium">Advanced AI Settings</summary>
+                        <div class="mt-4 space-y-4 text-gray-300">
+                            <div>
+                                <label for="custom_model" class="block mb-2">Custom OpenRouter Model:</label>
+                                <input type="text" name="custom_model" id="custom_model" class="w-full bg-gray-700 border border-gray-600 text-white p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" value="{{ default_model }}">
+                                <p class="text-sm text-gray-400 mt-1">Currently using: <span class="font-mono">{{ default_model }}</span>. Leave blank to use this default.</p>
+                            </div>
+                            <div>
+                                <label for="custom_prompt" class="block mb-2">Custom System Prompt:</label>
+                                <textarea name="custom_prompt" id="custom_prompt" rows="10" class="w-full bg-gray-700 border border-gray-600 text-white p-2 rounded-md font-mono text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter a custom system prompt here. Leave blank to use the default.">{{ default_prompt }}</textarea>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 justify-center mt-6">
+                        <button type="submit" formaction="/api/recommendations" class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105">
+                            Get Recommendations
+                        </button>
+                        <button type="submit" formaction="/api/recommendations/surprise-me" class="bg-gradient-to-r from-teal-500 to-green-600 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg hover:from-teal-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105">
+                            Surprise Me!
+                        </button>
+                    </div>
+                </form>
+
+                <div id="results" class="mt-8 p-6 bg-gray-900 rounded-lg shadow-xl hidden"></div>
+            </div>
+        {% else %}
+            <div class="text-center p-8 bg-gray-900 rounded-lg shadow-xl border border-gray-700 max-w-md mx-auto">
+                <p class="text-lg mb-6 text-gray-300">Please log in with your Steam account to get started.</p>
+                <a href="/login" class="inline-flex items-center bg-gradient-to-r from-blue-600 to-blue-800 text-white font-bold py-3 px-8 rounded-lg text-lg shadow-lg hover:from-blue-700 hover:to-blue-900 transition-all duration-300">
+                    <img src="https://community.akamai.steamstatic.com/public/images/signinthroughsteam/sits_02.png" alt="Sign in with Steam" class="inline-block mr-3" width="auto" height="23">
+                    Sign in with Steam
+                </a>
+            </div>
+        {% endif %}
+    </main>
+    
+    <footer class="text-center py-4 mt-8 text-xs text-gray-500">
+        <p>Steam Game Recommender &copy; 2023</p>
+        <p>Data provided by Steam Web API and HowLongToBeat.com</p>
+    </footer>
+
+    <script>
+        const recommendationsForm = document.getElementById('recommendations-form');
+        const resultsDiv = document.getElementById('results');
+
+        const handleFormSubmit = async (event) => {
+            event.preventDefault();
+            const form = event.target;
+            const action = event.submitter.formAction;
+            const formData = new FormData(form);
+
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.innerHTML = '<p class="text-center text-blue-400">Loading recommendations... this may take several minutes.</p>';
+
+            try {
+                const response = await fetch(action, { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const data = await response.json();
+                renderResults(data);
+            } catch (error) {
+                resultsDiv.innerHTML = `<p class="text-red-500">An error occurred: ${error.message}</p>`;
+            }
+        };
+        
+        const renderResults = (data) => {
+            resultsDiv.innerHTML = '';
+            let content = '';
+            if (data.recommendations && data.recommendations.length > 0) {
+                content += '<h3 class="text-xl font-bold mb-2 text-purple-300">Recommendations:</h3><ul class="list-disc pl-5">';
+                data.recommendations.forEach(rec => {
+                    content += `<li class="mb-2"><strong>${rec.title}</strong> (${rec.type}): ${rec.reason}</li>`;
+                });
+                content += '</ul>';
+            } else if (data.recommendation && data.recommendation.title) {
+                const rec = data.recommendation;
+                content += `<h3 class="text-xl font-bold mb-2 text-purple-300">Surprise Recommendation:</h3><p><strong>${rec.title}</strong> (${rec.type}): ${rec.reason}</p>`;
+            } else {
+                content = '<p>No recommendations found.</p>';
+            }
+
+            if (data.metrics) {
+                content += `<div class="mt-4 pt-4 border-t border-gray-700 text-sm text-gray-400"><h4 class="font-bold text-gray-300">LLM Metrics:</h4><p>Response Time: ${data.metrics.response_time.toFixed(2)} seconds</p>`;
+                if (data.metrics.usage) {
+                    content += `<p>Prompt Tokens: ${data.metrics.usage.prompt_tokens}</p><p>Completion Tokens: ${data.metrics.usage.completion_tokens}</p><p>Total Tokens: ${data.metrics.usage.total_tokens}</p>`;
+                }
+                content += '</div>';
+            }
+            resultsDiv.innerHTML = content;
+        };
+
+        const handleExclusionChange = async (event) => {
+            const checkbox = event.target;
+            const appid = checkbox.dataset.appid;
+            const action = checkbox.checked ? 'exclude' : 'include';
+            
+            try {
+                const response = await fetch(`/api/games/${action}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ appid: parseInt(appid) })
+                });
+                if (!response.ok) console.error(`Failed to ${action} game`);
+            } catch (error) {
+                console.error(`Failed to ${action} game:`, error);
+            }
+        };
+
+        const loadExclusionList = async () => {
+            const exclusionListDiv = document.getElementById('manual-exclusion-list');
+            exclusionListDiv.innerHTML = '<p>Loading your most played games...</p>';
+            try {
+                const response = await fetch('/api/games');
+                if (!response.ok) throw new Error('Failed to load game list.');
+                const data = await response.json();
+                
+                exclusionListDiv.innerHTML = '';
+                if (data.games && data.games.length > 0) {
+                    data.games.forEach(game => {
+                        const label = document.createElement('label');
+                        label.className = 'flex items-center space-x-2 p-2 bg-gray-700 rounded hover:bg-gray-600 cursor-pointer';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.checked = game.is_excluded;
+                        checkbox.dataset.appid = game.appid;
+                        checkbox.className = 'form-checkbox h-5 w-5 bg-gray-800 text-purple-600 border-gray-600 rounded focus:ring-purple-500';
+                        checkbox.addEventListener('change', handleExclusionChange);
+
+                        const span = document.createElement('span');
+                        span.textContent = game.name;
+                        span.className = 'truncate';
+
+                        label.appendChild(checkbox);
+                        label.appendChild(span);
+                        exclusionListDiv.appendChild(label);
+                    });
+                } else {
+                    exclusionListDiv.innerHTML = '<p>Could not load your game list.</p>';
+                }
+            } catch (error) {
+                exclusionListDiv.innerHTML = `<p class="text-red-500">${error.message}</p>`;
+            }
+        };
+        
+        const refreshButton = document.getElementById('refresh-button');
+        const refreshStatusDiv = document.getElementById('refresh-status');
+        const lastRefreshedSpan = document.getElementById('last-refreshed'); // Get the span for last refreshed time
+
+        const handleRefreshClick = async () => {
+            refreshStatusDiv.innerHTML = '<p class="text-blue-400">Refreshing game list from Steam... (this may take a moment)</p>';
+            refreshButton.disabled = true;
+            refreshButton.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                const response = await fetch('/api/games/refresh', { method: 'POST' });
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Failed to refresh.');
+                }
+                refreshStatusDiv.innerHTML = `<p class="text-green-400">${data.message}</p>`;
+                loadExclusionList(); // Reload the list with fresh data
+                document.getElementById('last-refreshed').textContent = new Date().toLocaleString(); // Update timestamp in footer
+            } catch (error) {
+                refreshStatusDiv.innerHTML = `<p class="text-red-500">Error refreshing: ${error.message}</p>`;
+            } finally {
+                refreshButton.disabled = false;
+                refreshButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        };
+
+        if (recommendationsForm) {
+            recommendationsForm.addEventListener('submit', handleFormSubmit);
+        }
+        
+        {% if user %}
+            document.addEventListener('DOMContentLoaded', loadExclusionList);
+            if(refreshButton) {
+                refreshButton.addEventListener('click', handleRefreshClick);
+            }
+        {% endif %}
+    </script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Configuration for the Steam Game Recommender
+
+[steam]
+api_key = "YOUR_STEAM_API_KEY"
+# You can get your Steam API key from: https://steamcommunity.com/dev/apikey
+
+[fastapi]
+host = "127.0.0.1"
+port = 8000
+secret_key = "YOUR_SUPER_SECRET_KEY" # Change this to a random string
+
+[recommender]
+# AI provider to use. Options: "OpenRouter", "AzureOpenAI", "OpenAI"
+provider = "OpenRouter"
+# api_key can be set here or in the .env file (recommended)
+# api_key = "YOUR_AI_PROVIDER_API_KEY"
+
+[openrouter]
+model = "mistralai/devstral-2512:free"
+# You can find more models at: https://openrouter.ai/models
+
+[azure_openai]
+# Add your Azure OpenAI details here
+# endpoint = "YOUR_AZURE_ENDPOINT"
+# deployment_name = "YOUR_DEPLOYMENT_NAME"
+
+[openai]
+model = "gpt-4-turbo-preview"

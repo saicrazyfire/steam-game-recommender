@@ -1,0 +1,27 @@
+[project]
+name = "steam-game-recommender"
+version = "0.1.0"
+description = "A Steam game recommender leveraging Steam API, HowLongToBeat, and AI."
+authors = [{ name = "Gemini", email = "gemini@google.com" }]
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "python-dotenv",
+    "howlongtobeatpy",
+    "jinja2",
+    "python-steam-api",
+    "requests",
+    "tomli",
+    "itsdangerous",
+    "httpx>=0.28.1",
+    "steam>=1.4.4",
+    "python-multipart>=0.0.21",
+]
+requires-python = ">=3.10" # Assuming Python 3.10 or higher for FastAPI and current libraries
+license = { text = "MIT" }
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv]
