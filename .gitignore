@@ -103,6 +103,8 @@ venv.bak/
 output/
 logs/
 # scripts/
+stats/
+stats/*
 *.db
 
 # Spyder project settings
