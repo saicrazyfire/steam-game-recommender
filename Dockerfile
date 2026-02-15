@@ -15,6 +15,7 @@ RUN uv pip install "fastapi[standard]"
 
 # Copy application code
 COPY src /app/src
+COPY . /app/
 
 # Final stage: minimal runtime image
 FROM python:3.12-slim
