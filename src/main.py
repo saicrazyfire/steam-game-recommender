@@ -82,6 +82,10 @@ async def home(request: Request):
         },
     )
 
+@app.get("/health")
+async def health(request: Request):
+    return JSONResponse(status_code=200, content={"ok": True})
+
 
 # --- Auth Endpoints ---
 @app.get("/login")
