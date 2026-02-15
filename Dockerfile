@@ -10,7 +10,6 @@ WORKDIR /app
 COPY pyproject.toml uv.lock /app
 
 # Install dependencies (only, no project code)
-RUN apt-get update && apt-get install -y curl
 RUN uv sync --frozen --no-install-project
 RUN uv pip install "fastapi[standard]"   
 
@@ -20,6 +19,9 @@ COPY . /app/
 
 # Final stage: minimal runtime image
 FROM python:3.12-slim
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
