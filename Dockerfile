@@ -24,6 +24,7 @@ WORKDIR /app
 
 # Copy installed dependencies and app from builder
 COPY --from=builder /app /app
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 COPY --from=builder /app/.venv/lib/python3.12/site-packages /app/.venv/lib/python3.12/site-packages
 
 # Expose port
