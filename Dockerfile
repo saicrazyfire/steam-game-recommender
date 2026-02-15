@@ -10,6 +10,7 @@ WORKDIR /app
 COPY pyproject.toml uv.lock /app
 
 # Install dependencies (only, no project code)
+RUN apt-get update && apt-get install -y curl
 RUN uv sync --frozen --no-install-project
 RUN uv pip install "fastapi[standard]"   
 
