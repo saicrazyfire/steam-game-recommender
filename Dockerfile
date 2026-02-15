@@ -29,4 +29,5 @@ COPY --from=builder /app /app
 EXPOSE 8000
 
 # Run FastAPI app using uv
-CMD ["/app/.venv/bin/fastapi", "run", "/app/src/main.py", "--host", "0.0.0.0", "--port", "8000"]   
+# CMD ["/app/.venv/bin/fastapi", "run", "/app/src/main.py", "--host", "0.0.0.0", "--port", "8000"]   
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host 0.0.0.0", "--port 8000"]
