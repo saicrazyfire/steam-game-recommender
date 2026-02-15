@@ -11,6 +11,7 @@ COPY pyproject.toml uv.lock /app
 
 # Install dependencies (only, no project code)
 RUN uv sync --frozen --no-install-project
+RUN uv pip install "fastapi[standard]"   
 
 # Copy application code
 COPY src /app/src
